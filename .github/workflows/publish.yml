@@ -26,6 +26,9 @@ jobs:
       # This is the fork of `registry`. It can be the same repo.
       registry_fork: filmil/bazel-registry
       attest: false
+      # Personal registry has the same actor as both PR author and
+      # approver, so no draft-then-mark-ready dance is needed.
+      draft: false
     permissions:
       contents: write
       id-token: write
