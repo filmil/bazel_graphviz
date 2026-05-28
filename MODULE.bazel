@@ -9,8 +9,7 @@ bazel_dep(name = "rules_shell", version = "0.6.1")
 
 bazel_dep(name = "buildifier_prebuilt", version = "8.5.1.2", dev_dependency = True)
 
-bazel_dep(name = "hermetic_cc_toolchain", version = "3.1.0")
-
+bazel_dep(name = "hermetic_cc_toolchain", version = "4.1.0")
 toolchains = use_extension("@hermetic_cc_toolchain//toolchain:ext.bzl", "toolchains")
 use_repo(toolchains, "zig_sdk")
 
@@ -33,3 +32,7 @@ http_archive(
         "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/14.0.0/graphviz-14.0.0.tar.gz",
     ],
 )
+
+
+
+bazel_dep(name = "protobuf", version = "34.1")
