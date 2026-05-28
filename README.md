@@ -39,6 +39,77 @@ check for duplicated effort.
 
 See [LICENSE](./LICENSE) for licensing information.
 
+## Public targets
+
+All targets below live in the root package of the `graphviz` module
+(reference them as `@graphviz//:<name>` from a consuming module).
+
+### Common entry points
+
+| Target                 | Kind        | Use for                                  |
+| ---------------------- | ----------- | ---------------------------------------- |
+| `@graphviz//:graphviz` | `cc_library`| The library most downstream users want — every core lib plus `plugin/core` and `plugin/dot_layout` aggregated, and the static plugin registration table (`lt_preloaded_symbols`) for `gvContextPlugins`. |
+| `@graphviz//:lib`      | `alias`     | Backwards-compatible alias for `:graphviz`. |
+| `@graphviz//:dot`      | `cc_binary` | The `dot` CLI. Run-only consumers (e.g. `genrule` data deps) should prefer the filegroup below. |
+| `@graphviz//:dot_bin`  | `filegroup` | Wraps `:dot` for use as `data = [...]` or in `$(location ...)` expansions. |
+
+### Granular libraries
+
+Useful if you only need part of the dependency graph — e.g. you want to
+parse a `.dot` file but do your own layout. They build cleanly in
+isolation and only pull in the deps they actually need.
+
+| Target                          | What it contains                                  |
+| ------------------------------- | ------------------------------------------------- |
+| `@graphviz//:cdt`               | `lib/cdt` — container data types (dict, tree).    |
+| `@graphviz//:util`              | `lib/util` — string, alloc, list utilities.       |
+| `@graphviz//:cgraph`            | `lib/cgraph` — graph data structure + dot parser. |
+| `@graphviz//:pathplan`          | `lib/pathplan` — shortest-path routing.           |
+| `@graphviz//:xdot`              | `lib/xdot` — extended-dot drawing operations.     |
+| `@graphviz//:label`             | `lib/label` — label placement.                    |
+| `@graphviz//:pack`              | `lib/pack` — graph packing / connected-component split. |
+| `@graphviz//:common`            | `lib/common` — layout-engine shared code.         |
+| `@graphviz//:gvc`               | `lib/gvc` — graphviz context, the main API.       |
+| `@graphviz//:dotgen`            | `lib/dotgen` — dot layout algorithm.              |
+| `@graphviz//:plugin_core`       | `plugin/core` — output drivers (dot, json, svg, ps, fig, map, tk, pov, pic). |
+| `@graphviz//:plugin_dot_layout` | `plugin/dot_layout` — the dot layout plugin wrapper. |
+
+### Minimal usage example
+
+```python
+# MODULE.bazel
+bazel_dep(name = "graphviz", version = "<latest>")
+```
+
+```python
+# BUILD.bazel
+cc_binary(
+    name = "my_tool",
+    srcs = ["my_tool.cc"],
+    deps = ["@graphviz//:graphviz"],
+)
+```
+
+```cpp
+// my_tool.cc — see integration/test.cc for the full example.
+#include <cgraph/cgraph.h>
+#include <gvc/gvc.h>
+#include <gvc/gvcext.h>  // declares lt_preloaded_symbols
+
+int main() {
+    GVC_t *gvc = gvContextPlugins(lt_preloaded_symbols, 0);
+    // ... build a graph with agopen/agnode/agedge, then gvLayout +
+    //     gvRenderData with "dot".
+    gvFreeContext(gvc);
+    return 0;
+}
+```
+
+> Use `gvContextPlugins(lt_preloaded_symbols, 0)` rather than
+> `gvContext()`. `gvContext()` passes `NULL` for builtins, so the
+> statically-registered `dot_layout` and `core` plugins never get
+> installed and layout/rendering both fail.
+
 ## Verify the build
 
 ```
