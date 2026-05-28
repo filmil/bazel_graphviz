@@ -1,6 +1,7 @@
 module(
     name = "graphviz",
     version = "0.0.0",
+    bazel_compatibility = [">=8.x"],
 )
 
 bazel_dep(name = "rules_cc", version = "0.2.8")
