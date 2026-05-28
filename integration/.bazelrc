@@ -1,7 +1,6 @@
 # Add your local user settings to file `user.bazelrc`
 try-import %workspace%/user.bazelrc
 
-common --registry=https://bcr.bazel.build
-common --registry=https://raw.githubusercontent.com/filmil/bazel-registry/main
-
 common --experimental_ui_max_stdouterr_bytes=9000000
+
+build --linkopt=-Wl,--allow-shlib-undefined

@@ -5,12 +5,22 @@
 
 # Summary
 
-This project is a [Bazel] module for [Graphviz]. It uses `rules_foreign_cc` to
-build Graphviz from source. The module downloads Graphviz version 14.0.0. The
-purpose is to provide a hermetic build of Graphviz for Bazel projects.
+This project is a [Bazel] module for [Graphviz]. It builds Graphviz 14.0.0
+from upstream sources using native Bazel `cc_library` / `cc_binary` rules
+(no `rules_foreign_cc`, no `./configure`, no `make`). The goal is a hermetic
+build of Graphviz that participates in Bazel's incremental build graph and
+remote-cache the same way the rest of your C/C++ code does.
 
-In some contexts, compiling with `rules_foreign_cc` may be suboptimal. PRs
-welcome to fix that.
+## Scope
+
+The build covers the core libraries (`cdt`, `cgraph`, `util`, `pathplan`,
+`xdot`, `label`, `pack`, `common`, `gvc`, `dotgen`), the statically-linked
+`plugin/core` (renders to `dot`, `json`, `svg`, `ps`, `fig`, `map`, `tk`,
+`pov`, `pic`, `xdot`) and `plugin/dot_layout` (the dot layout engine), plus
+the `dot` CLI. Layout engines other than `dot` (`neato`, `fdp`, `circo`,
+`twopi`, `sfdp`, `osage`, `patchwork`) and graphical-output plugins (pango,
+gd, xlib, kitty, etc.) are not built. Plugin loading via `libltdl` is
+disabled — all plugins are statically registered via `lt_preloaded_symbols`.
 
 [Bazel]: https://bazel.build/
 [Graphviz]: https://graphviz.org/
@@ -40,20 +50,14 @@ bazel test //... && cd integration && bazel test //...
 This build is entirely hermetic.
 
 
+## Formatting
+
+```
+bazel run //tools:buildifier
+```
+
 ## Release Registry
 
-The project publishes the relevant files to my [personal bazel registry][mcr]
-version has not been added to the upstream [BCR][bcr].
-
-This is often the case for pre-release versions.
-
-Add the following to `.bazelrc`:
-
-```
-common --registry=https://bcr.bazel.build
-common --registry=https://raw.githubusercontent.com/filmil/bazel-registry/main
-```
-
+Refer to the [BCR][bcr] for the latest release.
 
 [bcr]: https://registry.bazel.build/
-[mcr]: https://github.com/filmil/bazel-registry

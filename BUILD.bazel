@@ -1,198 +1,322 @@
-load("@rules_cc//cc:defs.bzl", "cc_test")
-load("@rules_foreign_cc//foreign_cc:defs.bzl", "configure_make", "configure_make_variant")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
 package(default_visibility = ["//visibility:public"])
 
-# A number of binaries have not been built here, due to lack of dep libraries.
-# If you need more binaries here, provide more deps.
-_BINARIES = [
-    "acyclic",
-    "bcomps",
-    "ccomps",
-    "cluster",
-    "dijkstra",
-    "dot2gxl",
-    "dot_static",
-    "edgepaint",
-    "gc",
-    "gml2gv",
-    "graphml2gv",
-    "gv2gml",
-    "gv2gxl",
-    "gvcolor",
-    "gvgen",
-    "gvmap",
-    "gvmap.sh",
-    "gvpack_static",
-    "gvpr_static",
-    "gxl2dot",
-    "gxl2gv",
-    "mm2gv",
-    "nop",
-    "prune",
-    "sccmap",
-    #"sfdp",
-    "tred",
-    "unflatten",
+# Macros that the autotools `config.h` would set, supplied as -D
+# flags. Propagated to dependents via `defines`.
+_CONFIG_DEFINES = [
+    "DEFAULT_DPI=96",
+    "GVPLUGIN_CONFIG_FILE=\\\"config8\\\"",
+    "GVPLUGIN_VERSION=8",
+    "HAVE_ARGZ_ADD=1",
+    "HAVE_ARGZ_APPEND=1",
+    "HAVE_ARGZ_COUNT=1",
+    "HAVE_ARGZ_CREATE_SEP=1",
+    "HAVE_ARGZ_H=1",
+    "HAVE_ARGZ_INSERT=1",
+    "HAVE_ARGZ_NEXT=1",
+    "HAVE_ARGZ_STRINGIFY=1",
+    "HAVE_CLOSEDIR=1",
+    "HAVE_CXX17=1",
+    "HAVE_DIRENT_H=1",
+    "HAVE_DLFCN_H=1",
+    "HAVE_DRAND48=1",
+    "HAVE_ERROR_T=1",
+    "HAVE_INTTYPES_H=1",
+    "HAVE_LIBZ=1",
+    "HAVE_MEMRCHR=1",
+    "HAVE_OPENDIR=1",
+    "HAVE_READDIR=1",
+    "HAVE_SELECT=1",
+    "HAVE_SETENV=1",
+    "HAVE_SRAND48=1",
+    "HAVE_STDINT_H=1",
+    "HAVE_STDIO_H=1",
+    "HAVE_STDLIB_H=1",
+    "HAVE_STRCASESTR=1",
+    "HAVE_STRINGS_H=1",
+    "HAVE_STRING_H=1",
+    "HAVE_SYS_IOCTL_H=1",
+    "HAVE_SYS_MMAN_H=1",
+    "HAVE_SYS_SELECT_H=1",
+    "HAVE_SYS_STAT_H=1",
+    "HAVE_SYS_TIME_H=1",
+    "HAVE_SYS_TYPES_H=1",
+    "HAVE_UNISTD_H=1",
+    "HAVE_WORKING_ARGZ=1",
+    "STDC_HEADERS=1",
+    "WITH_CGRAPH=1",
+    # Upstream marks util's helper functions with hidden visibility so
+    # they don't get exported when statically linked. Bazel builds each
+    # cc_library as an intermediate `.so`, which breaks the hidden-vs-
+    # cross-shared-object contract. Override to default visibility.
+    "UTIL_API=",
+    "PACKAGE_NAME=\\\"graphviz\\\"",
+    "PACKAGE_TARNAME=\\\"graphviz\\\"",
+    "PACKAGE_VERSION=\\\"14.0.0\\\"",
+    "PACKAGE_BUGREPORT=\\\"https://gitlab.com/graphviz/graphviz/-/issues\\\"",
+    "PACKAGE_URL=\\\"\\\"",
 ]
 
-
-alias(
-    name = "graphviz",
-    actual = ":lib",
+# Stub config.h. All real macros come from `_CONFIG_DEFINES`. Many
+# source files include "config.h" unconditionally.
+cc_library(
+    name = "config_h",
+    hdrs = ["include/config.h"],
+    defines = _CONFIG_DEFINES,
+    includes = ["include"],
 )
 
+cc_library(
+    name = "cdt",
+    srcs = ["@src//:cdt_srcs"],
+    deps = [
+        ":config_h",
+        "@src//:cdt_inc",
+        "@src//:lib_headers",
+    ],
+)
+
+cc_library(
+    name = "util",
+    srcs = ["@src//:util_srcs"],
+    deps = [
+        ":config_h",
+        "@src//:lib_headers",
+    ],
+)
+
+cc_library(
+    name = "cgraph",
+    srcs = ["@src//:cgraph_srcs"] + [
+        "@src//:lib/cgraph/grammar.c",
+        "@src//:lib/cgraph/scan.c",
+    ],
+    deps = [
+        ":cdt",
+        ":config_h",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:lib_headers",
+    ],
+)
+
+cc_library(
+    name = "pathplan",
+    srcs = ["@src//:pathplan_srcs"],
+    deps = [
+        ":config_h",
+        ":util",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "xdot",
+    srcs = ["@src//:xdot_srcs"],
+    deps = [
+        ":config_h",
+        ":util",
+        "@src//:lib_headers",
+    ],
+)
+
+cc_library(
+    name = "label",
+    srcs = ["@src//:label_srcs"],
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":config_h",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:lib_headers",
+    ],
+)
+
+cc_library(
+    name = "pack",
+    srcs = ["@src//:pack_srcs"],
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":config_h",
+        ":pathplan",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "common",
+    srcs = ["@src//:common_srcs"] + ["@src//:lib/common/htmlparse.c"],
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":config_h",
+        ":pathplan",
+        ":util",
+        ":xdot",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pack_inc",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "dotgen",
+    srcs = ["@src//:dotgen_srcs"],
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":pack",
+        ":pathplan",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pack_inc",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "gvc",
+    srcs = ["@src//:gvc_srcs"],
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":label",
+        ":pack",
+        ":pathplan",
+        ":util",
+        ":xdot",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+        "@src//:version_hdrs",
+        "@zlib",
+    ],
+)
+
+cc_library(
+    name = "plugin_core",
+    srcs = ["@src//:plugin_core_srcs"],
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":gvc",
+        ":util",
+        ":xdot",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:gvpr_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "plugin_dot_layout",
+    srcs = ["@src//:plugin_dot_layout_srcs"],
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":dotgen",
+        ":gvc",
+        ":pathplan",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+# Top-level graphviz library: gvc + statically registered plugins.
+cc_library(
+    name = "graphviz",
+    srcs = ["dot_builtins.cpp"],
+    linkstatic = True,
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":dotgen",
+        ":gvc",
+        ":label",
+        ":pack",
+        ":pathplan",
+        ":plugin_core",
+        ":plugin_dot_layout",
+        ":util",
+        ":xdot",
+        "@src//:lib_headers",
+        "@zlib",
+    ],
+    alwayslink = True,
+)
 
 alias(
     name = "lib",
-    actual = ":build_target",
+    actual = ":graphviz",
 )
 
-configure_make(
-    name = "build_target",
-    lib_source = "@src//:all_srcs",
-    configure_in_place = True,
-    env = {
-        "LDFLAGS": "-lz -lstdc++",
-    },
-    configure_options = [
-        "--disable-go",
-        "--disable-guile",
-        "--disable-java",
-        "--disable-lua",
-        "--disable-perl",
-        "--disable-python",
-        "--disable-python3",
-        "--disable-r",
-        "--disable-ruby",
-        # For some reason this does not produce .so files.
-        "--disable-shared",
-        "--disable-swig",
-        "--disable-tcl",
-        "--enable-static",
-    ],
-    out_binaries = _BINARIES,
-    # For some reason, shared library building does not work.
-    # I added `--disable-shared` to turn that off completely.
-    #out_shared_libs = [
-        #"libgvpr.so.2",
-        #"libgvc.so.7.0.0",
-        #"libpathplan.so.4",
-        #"libcgraph.so.8",
-        #"libgvpr.so.2.0.0",
-        #"libxdot.so.4.0.0",
-        #"graphviz/libgvplugin_xlib.so.8",
-        #"graphviz/libgvplugin_kitty.so.8.0.0",
-        #"graphviz/libgvplugin_neato_layout.so",
-        #"graphviz/libgvplugin_core.so.8",
-        #"graphviz/libgvplugin_dot_layout.so.8",
-        #"graphviz/libgvplugin_gdk.so.8",
-        #"graphviz/libgvplugin_xlib.so",
-        #"graphviz/libgvplugin_gdk.so",
-        #"graphviz/libgvplugin_vt.so.8.0.0",
-        #"graphviz/libgvplugin_core.so.8.0.0",
-        #"graphviz/libgvplugin_pango.so.8",
-        #"graphviz/libgvplugin_dot_layout.so.8.0.0",
-        #"graphviz/libgvplugin_xlib.so.8.0.0",
-        #"graphviz/libgvplugin_kitty.so.8",
-        #"graphviz/libgvplugin_dot_layout.so",
-        #"graphviz/libgvplugin_pango.so.8.0.0",
-        #"graphviz/libgvplugin_kitty.so",
-        #"graphviz/libgvplugin_vt.so",
-        #"graphviz/libgvplugin_neato_layout.so.8.0.0",
-        #"graphviz/tcl/libtcldot.so",
-        #"graphviz/tcl/libtcldot_builtin.so",
-        #"graphviz/tcl/libtclplan.so",
-        #"graphviz/libgvplugin_gdk.so.8.0.0",
-        #"graphviz/libgvplugin_neato_layout.so.8",
-        #"graphviz/libgvplugin_vt.so.8",
-        #"graphviz/libgvplugin_pango.so",
-        #"graphviz/libgvplugin_core.so",
-        #"libcgraph.so.8.0.0",
-        #"libgvpr.so",
-        #"libcdt.so.6.0.0",
-        #"libgvc.so",
-        #"libcgraph.so",
-        #"libxdot.so.4",
-        #"libcdt.so.6",
-        #"libcdt.so",
-        #"libpathplan.so.4.0.0",
-        #"libxdot.so",
-        #"libpathplan.so",
-        #"libgvc.so.7",
-    #],
-    out_static_libs = [
-        "graphviz/libgvplugin_neato_layout.a",
-        "graphviz/libgvplugin_dot_layout.a",
-        "graphviz/libgvplugin_core.a",
-        #"graphviz/libgvplugin_gdk.a",
-        #"graphviz/libgvplugin_pango.a",
-        #"graphviz/tcl/libtcldot_builtin.a",
-        #"graphviz/tcl/libtcldot.a",
-        "graphviz/libgvplugin_vt.a",
-        "libgvc.a",
-        "libgvpr.a",
-    ],
-    deps = [
-        "@zlib//:zlib",
-    ],
+# `dot`: layout + render driver. The graphviz library already pulls
+# in the static plugin registration table (dot_builtins.cpp).
+cc_binary(
+    name = "dot",
+    srcs = ["@src//:cmd_dot_srcs"],
+    local_defines = ["DEMAND_LOADING=0"],
+    deps = [":graphviz"],
 )
 
-
-[
-    # Generate a target for each binary, for example `//:eu-ar_bin`.
-    filegroup(
-        name = binary_name + "_bin",
-        output_group = binary_name,
-        srcs = [":lib"],
-    )
-    for binary_name in _BINARIES
-]
-
-[
-    sh_test(
-        name = "test_sh_" + binary_name,
-        srcs = [
-            "test.sh",
-        ],
-        args = [
-            "$(location :" + binary_name + "_bin)",
-        ],
-        data = [
-            ":" + binary_name + "_bin",
-        ]
-    )
-    for binary_name in _BINARIES
-]
 filegroup(
     name = "dot_bin",
-    output_group = "dot_static",
-    srcs = [":lib"],
+    srcs = [":dot"],
 )
-
-
 
 cc_test(
     name = "test",
-    srcs = [
-        "test.cc",
-    ],
-    deps = [
-        ":lib",
-    ],
+    srcs = ["test.cc"],
+    linkstatic = True,
+    deps = [":graphviz"],
 )
-
 
 sh_test(
     name = "test_sh",
-    srcs = [
-        "test.sh",
-    ],
-    args = [
-        "$(location :dot_bin)",
-    ],
-    data = [
-        ":dot_bin",
-    ]
+    srcs = ["test.sh"],
+    args = ["$(location :dot_bin)"],
+    data = [":dot_bin"],
 )

@@ -1,11 +1,22 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
 package(default_visibility = ["//visibility:public"])
 
+# Builds against the bazel-native graphviz library and exercises a
+# minimum slice of the public API (cgraph + gvc).
 cc_test(
     name = "test",
-    srcs = [
-        "test.cc",
-    ],
-    deps = ["@graphviz//:graphviz"],
+    srcs = ["test.cc"],
+    linkstatic = True,
+    deps = ["@graphviz"],
+)
+
+# Confirms the `dot` binary built by the upstream module is runnable
+# and produces output.
+sh_test(
+    name = "dot_runs",
+    srcs = ["run_dot.sh"],
+    args = ["$(location @graphviz//:dot)"],
+    data = ["@graphviz//:dot"],
 )
