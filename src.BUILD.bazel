@@ -1,6 +1,153 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
+# Headers from every lib/ subdir, on the include path as `lib/`. Source
+# files use the `<subdir/header.h>` form to reach into peer libraries.
+cc_library(
+    name = "lib_headers",
+    hdrs = glob([
+        "lib/**/*.h",
+    ]),
+    includes = ["lib"],
+)
+
+# Extra include paths for libraries whose own translation units use
+# unprefixed bracketed includes (e.g. cgraph/grammar.c does
+# `#include <cghdr.h>` for a same-directory header). Headers
+# themselves are already exposed via `lib_headers`; these wrappers
+# add the additional `-I` path so the compiler can locate them.
+cc_library(
+    name = "cdt_inc",
+    includes = ["lib/cdt"],
+)
+
+cc_library(
+    name = "cgraph_inc",
+    includes = ["lib/cgraph"],
+)
+
+cc_library(
+    name = "pathplan_inc",
+    includes = ["lib/pathplan"],
+)
+
+cc_library(
+    name = "common_inc",
+    includes = ["lib/common"],
+)
+
+cc_library(
+    name = "gvc_inc",
+    includes = ["lib/gvc"],
+)
+
+cc_library(
+    name = "pack_inc",
+    includes = ["lib/pack"],
+)
+
+cc_library(
+    name = "gvpr_inc",
+    includes = ["lib/gvpr"],
+)
+
+# Pre-baked version headers at the tarball root.
+cc_library(
+    name = "version_hdrs",
+    hdrs = [
+        "builddate.h",
+        "graphviz_version.h",
+    ],
+    includes = ["."],
+)
+
+exports_files([
+    "lib/cgraph/grammar.c",
+    "lib/cgraph/grammar.h",
+    "lib/cgraph/scan.c",
+    "lib/common/htmlparse.c",
+    "lib/common/htmlparse.h",
+    "lib/common/colortbl.h",
+    "lib/common/entities.h",
+    "builddate.h",
+    "graphviz_version.h",
+])
+
+# Per-library source filegroups.
 filegroup(
-    name = "all_srcs",
-    srcs = glob(["**"], exclude = ["*.bazel"]),
+    name = "cdt_srcs",
+    srcs = glob(["lib/cdt/*.c"]),
+)
+
+filegroup(
+    name = "util_srcs",
+    srcs = glob(["lib/util/*.c"]),
+)
+
+filegroup(
+    name = "cgraph_srcs",
+    srcs = glob(
+        ["lib/cgraph/*.c"],
+        exclude = [
+            "lib/cgraph/grammar.c",
+            "lib/cgraph/scan.c",
+        ],
+    ),
+)
+
+filegroup(
+    name = "pathplan_srcs",
+    srcs = glob(["lib/pathplan/*.c"]),
+)
+
+filegroup(
+    name = "xdot_srcs",
+    srcs = glob(["lib/xdot/*.c"]),
+)
+
+filegroup(
+    name = "label_srcs",
+    srcs = glob(["lib/label/*.c"]),
+)
+
+filegroup(
+    name = "pack_srcs",
+    srcs = glob(["lib/pack/*.c"]),
+)
+
+filegroup(
+    name = "common_srcs",
+    srcs = glob(
+        ["lib/common/*.c"],
+        exclude = ["lib/common/htmlparse.c"],
+    ),
+)
+
+filegroup(
+    name = "gvc_srcs",
+    srcs = glob(["lib/gvc/*.c"]),
+)
+
+filegroup(
+    name = "dotgen_srcs",
+    srcs = glob(["lib/dotgen/*.c"]),
+)
+
+filegroup(
+    name = "plugin_core_srcs",
+    srcs = glob(["plugin/core/*.c"]) + glob(["plugin/core/*.h"]),
+)
+
+filegroup(
+    name = "plugin_dot_layout_srcs",
+    srcs = glob(["plugin/dot_layout/*.c"]) + glob(
+        ["plugin/dot_layout/*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "cmd_dot_srcs",
+    srcs = ["cmd/dot/dot.c"],
 )
