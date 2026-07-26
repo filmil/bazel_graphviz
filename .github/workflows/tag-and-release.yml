@@ -2,7 +2,7 @@ name: Tag and Release
 
 on:
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: '0 0 1 1,7 *'
   workflow_dispatch:
 
 jobs:
@@ -28,23 +28,28 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           release_branches: main
       - name: Create a GitHub release
+        if: steps.tag_version.outputs.new_tag != ''
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.tag_version.outputs.new_tag }}
           generateReleaseNotes: true
       - name: Get release tag
+        if: steps.tag_version.outputs.new_tag != ''
         id: get_version
         run: echo "VERSION=${{ steps.tag_version.outputs.new_tag }}" >> $GITHUB_ENV
       - name: Get repo name
+        if: steps.tag_version.outputs.new_tag != ''
         id: get_repo_name
         run: echo "REPO_NAME=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
       - name: "Publish source archive"
+        if: steps.tag_version.outputs.new_tag != ''
         uses: thedoctor0/zip-release@0.7.5
         with:
           type: 'zip'
           filename: "${{ env.REPO_NAME }}-${{ env.VERSION }}.zip"
           exclusions: '*.git* /*node_modules/* .editorconfig /bazel-*'
       - name: "Upload source archive"
+        if: steps.tag_version.outputs.new_tag != ''
         uses: ncipollo/release-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
