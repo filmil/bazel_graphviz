@@ -27,6 +27,13 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           release_branches: main
+          # The guards below already skip the release and the publication when
+          # `new_tag` is empty, but the action never left it empty: it bumps the
+          # patch version on every run, even with no new commit. v0.0.47 and
+          # v0.0.48 hold the same tree for that reason. `false` makes the action
+          # emit an empty `new_tag` when no commit asks for a release, which
+          # finally lets the existing guards do their work.
+          default_bump: false
       - name: Create a GitHub release
         if: steps.tag_version.outputs.new_tag != ''
         uses: ncipollo/release-action@v1
