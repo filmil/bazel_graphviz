@@ -1,4 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -263,6 +264,248 @@ cc_library(
     ],
 )
 
+# --- Layout engines beyond `dot` -------------------------------------------
+#
+# The neato_layout plugin supplies every remaining layout engine: neato, fdp,
+# sfdp, circo, twopi, osage and patchwork. Dependency edges below were taken
+# from the `#include <subdir/...>` graph of the upstream sources.
+
+cc_library(
+    name = "rbtree",
+    srcs = ["@src//:rbtree_srcs"],
+    # graphviz hides its symbols, so these cannot be linked as separate
+    # shared libraries; they are static components of :graphviz.
+    linkstatic = True,
+    deps = [
+        ":config_h",
+        "@src//:lib_headers",
+    ],
+)
+
+# Self-contained C++ solver used by neatogen.
+cc_library(
+    name = "vpsc",
+    srcs = ["@src//:vpsc_srcs"],
+    # graphviz hides its symbols, so these cannot be linked as separate
+    # shared libraries; they are static components of :graphviz.
+    linkstatic = True,
+    deps = [
+        ":config_h",
+        "@src//:lib_headers",
+    ],
+)
+
+cc_library(
+    name = "sparse",
+    srcs = ["@src//:sparse_srcs"],
+    # graphviz hides its symbols, so these cannot be linked as separate
+    # shared libraries; they are static components of :graphviz.
+    linkstatic = True,
+    deps = [
+        ":config_h",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "ortho",
+    srcs = ["@src//:ortho_srcs"],
+    # graphviz hides its symbols, so these cannot be linked as separate
+    # shared libraries; they are static components of :graphviz.
+    linkstatic = True,
+    deps = [
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":pathplan",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "neatogen",
+    srcs = ["@src//:neatogen_srcs"],
+    # graphviz hides its symbols, so these cannot be linked as separate
+    # shared libraries; they are static components of :graphviz.
+    linkstatic = True,
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":label",
+        ":ortho",
+        ":pack",
+        ":pathplan",
+        ":rbtree",
+        ":sparse",
+        ":util",
+        ":vpsc",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "fdpgen",
+    srcs = ["@src//:fdpgen_srcs"],
+    # graphviz hides its symbols, so these cannot be linked as separate
+    # shared libraries; they are static components of :graphviz.
+    linkstatic = True,
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":neatogen",
+        ":pack",
+        ":pathplan",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "circogen",
+    srcs = ["@src//:circogen_srcs"],
+    # graphviz hides its symbols, so these cannot be linked as separate
+    # shared libraries; they are static components of :graphviz.
+    linkstatic = True,
+    deps = [
+        ":cdt",
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":neatogen",
+        ":pack",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "twopigen",
+    srcs = ["@src//:twopigen_srcs"],
+    # graphviz hides its symbols, so these cannot be linked as separate
+    # shared libraries; they are static components of :graphviz.
+    linkstatic = True,
+    deps = [
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":neatogen",
+        ":pack",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+# Named *_lib because the layout binary below owns the plain name.
+cc_library(
+    name = "osage_lib",
+    srcs = ["@src//:osage_srcs"],
+    # graphviz hides its symbols, so these cannot be linked as separate
+    # shared libraries; they are static components of :graphviz.
+    linkstatic = True,
+    deps = [
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":neatogen",
+        ":pack",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+# Named *_lib because the layout binary below owns the plain name.
+cc_library(
+    name = "patchwork_lib",
+    srcs = ["@src//:patchwork_srcs"],
+    # graphviz hides its symbols, so these cannot be linked as separate
+    # shared libraries; they are static components of :graphviz.
+    linkstatic = True,
+    deps = [
+        ":cgraph",
+        ":common",
+        ":config_h",
+        ":fdpgen",
+        ":neatogen",
+        ":pack",
+        ":sparse",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
+cc_library(
+    name = "plugin_neato_layout",
+    srcs = ["@src//:plugin_neato_layout_srcs"],
+    # gvlayout_neato_layout.c guards the sfdp engine behind #ifdef SFDP. The
+    # sfdpgen sources are compiled as part of :neatogen, so enable it.
+    local_defines = ["SFDP"],
+    deps = [
+        ":cgraph",
+        ":circogen",
+        ":common",
+        ":config_h",
+        ":fdpgen",
+        ":gvc",
+        ":neatogen",
+        ":osage_lib",
+        ":patchwork_lib",
+        ":twopigen",
+        ":util",
+        "@src//:cdt_inc",
+        "@src//:cgraph_inc",
+        "@src//:common_inc",
+        "@src//:gvc_inc",
+        "@src//:lib_headers",
+        "@src//:pathplan_inc",
+    ],
+)
+
 # Top-level graphviz library: gvc + statically registered plugins.
 cc_library(
     name = "graphviz",
@@ -280,6 +523,7 @@ cc_library(
         ":pathplan",
         ":plugin_core",
         ":plugin_dot_layout",
+        ":plugin_neato_layout",
         ":util",
         ":xdot",
         "@src//:lib_headers",
@@ -305,6 +549,47 @@ cc_binary(
 filegroup(
     name = "dot_bin",
     srcs = [":dot"],
+)
+
+# The layout engines as separately named binaries.
+#
+# In graphviz these are all the same executable: `dot` selects its layout from
+# argv[0], falling back to `-K<engine>`. Rather than rely on argv[0] surviving
+# Bazel's runfiles handling, each name is a thin wrapper that passes -K
+# explicitly, which is the documented and more predictable route.
+LAYOUT_ENGINES = [
+    "circo",
+    "fdp",
+    "neato",
+    "osage",
+    "patchwork",
+    "sfdp",
+    "twopi",
+]
+
+[
+    genrule(
+        name = "{}_sh".format(engine),
+        outs = ["{}.sh".format(engine)],
+        cmd = ("echo '#!/bin/sh' > $@ && " +
+               "echo 'exec \"$$(dirname \"$$0\")/dot\" -K{} \"$$@\"' >> $@").format(engine),
+    )
+    for engine in LAYOUT_ENGINES
+]
+
+[
+    sh_binary(
+        name = engine,
+        srcs = ["{}.sh".format(engine)],
+        data = [":dot"],
+    )
+    for engine in LAYOUT_ENGINES
+]
+
+# Every graphviz layout binary this module provides, `dot` included.
+filegroup(
+    name = "all_layout_bins",
+    srcs = [":dot"] + [":{}".format(e) for e in LAYOUT_ENGINES],
 )
 
 cc_test(

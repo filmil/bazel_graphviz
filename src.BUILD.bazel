@@ -139,6 +139,78 @@ filegroup(
     srcs = glob(["plugin/core/*.c"]) + glob(["plugin/core/*.h"]),
 )
 
+# Layout engines beyond `dot`. The neato_layout plugin provides neato, fdp,
+# sfdp, circo, twopi, osage and patchwork, so these libraries come as a set.
+
+# neatogen and sfdpgen include each other (lib/neatogen -> <sfdpgen/...> and
+# lib/sfdpgen -> <neatogen/...>), which Bazel cannot express as two targets, so
+# they are compiled as one.
+filegroup(
+    name = "neatogen_srcs",
+    srcs = glob([
+        "lib/neatogen/*.c",
+        "lib/sfdpgen/*.c",
+    ]),
+)
+
+filegroup(
+    name = "sparse_srcs",
+    srcs = glob(["lib/sparse/*.c"]),
+)
+
+# test_red_black_tree.c is upstream's standalone driver and defines main().
+filegroup(
+    name = "rbtree_srcs",
+    srcs = glob(
+        ["lib/rbtree/*.c"],
+        exclude = ["lib/rbtree/test_red_black_tree.c"],
+    ),
+)
+
+filegroup(
+    name = "ortho_srcs",
+    srcs = glob(["lib/ortho/*.c"]),
+)
+
+# The only C++ library in this set.
+filegroup(
+    name = "vpsc_srcs",
+    srcs = glob(["lib/vpsc/*.cpp"]),
+)
+
+filegroup(
+    name = "fdpgen_srcs",
+    srcs = glob(["lib/fdpgen/*.c"]),
+)
+
+filegroup(
+    name = "circogen_srcs",
+    srcs = glob(["lib/circogen/*.c"]),
+)
+
+filegroup(
+    name = "twopigen_srcs",
+    srcs = glob(["lib/twopigen/*.c"]),
+)
+
+filegroup(
+    name = "osage_srcs",
+    srcs = glob(["lib/osage/*.c"]),
+)
+
+filegroup(
+    name = "patchwork_srcs",
+    srcs = glob(["lib/patchwork/*.c"]),
+)
+
+filegroup(
+    name = "plugin_neato_layout_srcs",
+    srcs = glob(["plugin/neato_layout/*.c"]) + glob(
+        ["plugin/neato_layout/*.h"],
+        allow_empty = True,
+    ),
+)
+
 filegroup(
     name = "plugin_dot_layout_srcs",
     srcs = glob(["plugin/dot_layout/*.c"]) + glob(
