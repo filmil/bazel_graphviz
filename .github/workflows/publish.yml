@@ -2,7 +2,7 @@
 #
 # The module is an overlay over the upstream graphviz archive, so there is no
 # release of this repository to publish: the entry is generated into registry/
-# by tools/make_entry.py and committed, and publishing is copying it into a
+# by //tools:make_entry and committed, and publishing is copying it into a
 # registry. filmil/bazel-registry always; the Bazel Central Registry when
 # asked, because that pull request is public and reviewed by its maintainers.
 name: Publish the registry entry
@@ -25,8 +25,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: "Check the entry exists"
-        run: test -f "registry/modules/graphviz/${{ inputs.version }}/source.json"
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+      - name: "The entry exists and is current"
+        run: |
+          test -f "registry/modules/graphviz/${{ inputs.version }}/source.json"
+          bazel run //tools:make_entry -- check
+      - name: "Build the tool once, outside the steps that use it"
+        run: bazel build //tools:make_entry
 
       - name: "Pull request to filmil/bazel-registry"
         env:
@@ -35,27 +45,14 @@ jobs:
           set -o errexit -o nounset -o pipefail
           version="${{ inputs.version }}"
           git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/filmil/bazel-registry.git" /tmp/registry
+          mkdir -p /tmp/registry/modules/graphviz
+          cp -r "registry/modules/graphviz/${version}" /tmp/registry/modules/graphviz/
+          bazel run //tools:make_entry -- merge-metadata \
+            "${PWD}/registry/modules/graphviz/metadata.json" /tmp/registry/modules/graphviz/metadata.json
           cd /tmp/registry
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "graphviz-${version}"
-          mkdir -p modules/graphviz
-          cp -r "${GITHUB_WORKSPACE}/registry/modules/graphviz/${version}" modules/graphviz/
-          python3 - "${GITHUB_WORKSPACE}/registry/modules/graphviz/metadata.json" modules/graphviz/metadata.json <<'PY'
-          import json, sys
-          ours = json.load(open(sys.argv[1]))
-          try:
-              theirs = json.load(open(sys.argv[2]))
-          except FileNotFoundError:
-              theirs = {"versions": [], "yanked_versions": {}}
-          for v in ours["versions"]:
-              if v not in theirs["versions"]:
-                  theirs["versions"].append(v)
-          for k in ("homepage", "maintainers", "repository"):
-              theirs[k] = ours[k]
-          json.dump(theirs, open(sys.argv[2], "w"), indent=4)
-          open(sys.argv[2], "a").write("\n")
-          PY
           git add modules/graphviz
           git commit -m "graphviz ${version}"
           git push -u origin "graphviz-${version}"
@@ -72,30 +69,22 @@ jobs:
           version="${{ inputs.version }}"
           gh repo sync filmil/bazel-central-registry --source bazelbuild/bazel-central-registry
           git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/filmil/bazel-central-registry.git" /tmp/bcr
+          mkdir -p /tmp/bcr/modules/graphviz
+          cp -r "registry/modules/graphviz/${version}" /tmp/bcr/modules/graphviz/
+          bazel run //tools:make_entry -- merge-metadata \
+            "${PWD}/registry/modules/graphviz/metadata.json" /tmp/bcr/modules/graphviz/metadata.json
           cd /tmp/bcr
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "graphviz-${version}"
-          mkdir -p modules/graphviz
-          cp -r "${GITHUB_WORKSPACE}/registry/modules/graphviz/${version}" modules/graphviz/
-          python3 - "${GITHUB_WORKSPACE}/registry/modules/graphviz/metadata.json" modules/graphviz/metadata.json <<'PY'
-          import json, sys
-          ours = json.load(open(sys.argv[1]))
-          try:
-              theirs = json.load(open(sys.argv[2]))
-          except FileNotFoundError:
-              theirs = {"versions": [], "yanked_versions": {}}
-          for v in ours["versions"]:
-              if v not in theirs["versions"]:
-                  theirs["versions"].append(v)
-          for k in ("homepage", "maintainers", "repository"):
-              theirs[k] = ours[k]
-          json.dump(theirs, open(sys.argv[2], "w"), indent=4)
-          open(sys.argv[2], "a").write("\n")
-          PY
           git add modules/graphviz
           git commit -m "graphviz ${version}"
           git push -u origin "graphviz-${version}"
           gh pr create --repo bazelbuild/bazel-central-registry --base main --head "filmil:graphviz-${version}" \
             --title "graphviz ${version}" \
-            --body "Overlay module for graphviz, upstream source archive from gitlab.com/graphviz/graphviz. Maintained at https://github.com/filmil/bazel_graphviz."
+            --body "$(printf '%s\n' \
+              "Overlay module for graphviz: upstream's own release archive from gitlab.com/graphviz/graphviz, built with rules_cc alone (no rules_foreign_cc). Provides the library, the dot binary, and one binary per layout engine." \
+              "" \
+              "Maintained at https://github.com/filmil/bazel_graphviz, where the entry is generated and validated with tools/bcr_validation.py before it is published." \
+              "" \
+              "Fixes: https://github.com/bazelbuild/bazel-central-registry/issues/4599")"

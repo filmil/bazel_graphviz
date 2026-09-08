@@ -24,6 +24,37 @@ jobs:
           disk-cache: ${{ github.workflow }}
           repository-cache: true
       - name: "registry/ matches overlay/, tests/ and upstream.json"
-        run: bazel run //tools:make_entry -- --check
+        run: bazel run //tools:make_entry -- check
       - name: "Build and test @graphviz through the registry entry"
         run: bazel test //...
+
+  # What the Bazel Central Registry's presubmit checks first, run with its
+  # own tool against the entry in registry/: the archive's integrity, every
+  # overlay file's hash, MODULE.bazel against the overlay, metadata.json and
+  # the shape of presubmit.yml. NEED_BCR_MAINTAINER_REVIEW for a new version
+  # is expected and is not a failure.
+  bcr-validation:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Checkout the Bazel Central Registry
+        uses: actions/checkout@v7
+        with:
+          repository: bazelbuild/bazel-central-registry
+          path: bcr
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-bcr
+          repository-cache: true
+      - name: "Validate the entry with the registry's tool"
+        run: |
+          set -o errexit -o nounset -o pipefail
+          version="$(jq -r '"\(.upstream_version).bcr.\(.overlay_edition)"' upstream.json)"
+          rm -rf bcr/modules/graphviz
+          cp -r registry/modules/graphviz bcr/modules/graphviz
+          cd bcr
+          bazel run //tools:bcr_validation -- --check "graphviz@${version}" --check_metadata graphviz \
+            --skip_validation url_stability --skip_validation attestations
