@@ -56,5 +56,12 @@ jobs:
           rm -rf bcr/modules/graphviz
           cp -r registry/modules/graphviz bcr/modules/graphviz
           cd bcr
+          # Exit status 42 is the tool's "everything passes, and a BCR maintainer
+          # has to review the new presubmit.yml", which every new version gets.
+          rc=0
           bazel run //tools:bcr_validation -- --check "graphviz@${version}" --check_metadata graphviz \
-            --skip_validation url_stability --skip_validation attestations
+            --skip_validation url_stability --skip_validation attestations || rc=$?
+          case "${rc}" in
+            0|42) ;;
+            *) echo "bcr_validation exited with ${rc}" >&2; exit "${rc}" ;;
+          esac

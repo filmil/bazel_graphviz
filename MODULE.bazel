@@ -1,6 +1,6 @@
 # The module this repository publishes is not this file: it is overlay/, laid
 # over the upstream graphviz source archive by a Bazel registry. See
-# upstream.json and tools/make_entry.py.
+# upstream.json and tools/make_entry/main.go.
 #
 # This is the development module. It consumes @graphviz from the registry
 # entry in registry/, through --registry=file://... in .bazelrc, so what is
