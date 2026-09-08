@@ -1,11 +1,21 @@
 load("@buildifier_prebuilt//:rules.bzl", "buildifier")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 
 package(default_visibility = ["//visibility:public"])
 
 # Format every Starlark / BUILD file in the workspace. Run with
-# `bazel run //tools:buildifier`. Kept in a separate package so that
-# `buildifier_prebuilt` (a dev-only dependency) is not pulled into
-# downstream consumers of `@graphviz`.
+# `bazel run //tools:buildifier`.
 buildifier(
     name = "buildifier",
 )
+
+# Writes registry/ from overlay/, tests/ and upstream.json:
+# `bazel run //tools:make_entry`. With `-- --check` it only reports whether
+# registry/ is current, which is what CI runs.
+py_binary(
+    name = "make_entry",
+    srcs = ["make_entry.py"],
+    data = ["presubmit.yml"],
+)
+
+exports_files(["presubmit.yml"])

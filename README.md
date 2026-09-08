@@ -1,134 +1,77 @@
-[![Test](https://github.com/filmil/bazel_graphviz_foreign/actions/workflows/test.yml/badge.svg)](https://github.com/filmil/bazel_graphviz_foreign/actions/workflows/test.yml)
-[![Tag and Release](https://github.com/filmil/bazel_graphviz_foreign/actions/workflows/tag-and-release.yml/badge.svg)](https://github.com/filmil/bazel_graphviz_foreign/actions/workflows/tag-and-release.yml)
-[![Publish to my Bazel registry](https://github.com/filmil/bazel_graphviz_foreign/actions/workflows/publish.yml/badge.svg)](https://github.com/filmil/bazel_graphviz_foreign/actions/workflows/publish.yml)
-[![Publish on Bazel Central Registry](https://github.com/filmil/bazel_graphviz_foreign/actions/workflows/publish-bcr.yml/badge.svg)](https://github.com/filmil/bazel_graphviz_foreign/actions/workflows/publish-bcr.yml)
+# Graphviz, built with Bazel
 
-# Summary
+[![Test](https://github.com/filmil/bazel_graphviz/actions/workflows/test.yml/badge.svg)](https://github.com/filmil/bazel_graphviz/actions/workflows/test.yml)
+[![Publish the registry entry](https://github.com/filmil/bazel_graphviz/actions/workflows/publish.yml/badge.svg)](https://github.com/filmil/bazel_graphviz/actions/workflows/publish.yml)
 
-This project is a [Bazel] module for [Graphviz]. It builds Graphviz 14.0.0
-from upstream sources using native Bazel `cc_library` / `cc_binary` rules
-(no `rules_foreign_cc`, no `./configure`, no `make`). The goal is a hermetic
-build of Graphviz that participates in Bazel's incremental build graph and
-remote-cache the same way the rest of your C/C++ code does.
+A Bazel module for [graphviz][gv], in the shape a Bazel registry uses for a
+third-party library whose upstream ships no Bazel files: an **overlay**.
+The registry serves upstream's own release archive, and lays the build files
+in `overlay/` on top of it.
+This is how the Bazel Central Registry packages such projects; see, for
+example, [nasm][nasm].
 
-## Scope
+The module is named `graphviz`.
+Its version is `<upstream version>.bcr.<edition>`, so `14.0.0.bcr.1` is
+graphviz 14.0.0 with the first edition of these build files.
+A change to the build files alone bumps the edition; a new upstream release
+resets it to 1.
 
-The build covers the core libraries (`cdt`, `cgraph`, `util`, `pathplan`,
-`xdot`, `label`, `pack`, `common`, `gvc`, `dotgen`), the statically-linked
-`plugin/core` (renders to `dot`, `json`, `svg`, `ps`, `fig`, `map`, `tk`,
-`pov`, `pic`, `xdot`) and `plugin/dot_layout` (the dot layout engine), plus
-the `dot` CLI. Layout engines other than `dot` (`neato`, `fdp`, `circo`,
-`twopi`, `sfdp`, `osage`, `patchwork`) and graphical-output plugins (pango,
-gd, xlib, kitty, etc.) are not built. Plugin loading via `libltdl` is
-disabled — all plugins are statically registered via `lt_preloaded_symbols`.
+[gv]: https://gitlab.com/graphviz/graphviz
+[nasm]: https://registry.bazel.build/modules/nasm
 
-[Bazel]: https://bazel.build/
-[Graphviz]: https://graphviz.org/
+## Using it
 
-
-# Bill-of-Material notices
-
-You may notice that I have a few similar projects. This is my effort to provide
-hermetic libraries for the upcoming Bazel modules world. Refer to
-[standardization notes][stdn] for details.
-
-[stdn]: https://hdlfactory.com/post/2025/09/29/getting-ready-for-the-brave-new-bazel-modules-world/
-
-Other modules for the same library may be available. It is not my intention to
-check for duplicated effort.
-
-See [LICENSE](./LICENSE) for licensing information.
-
-## Public targets
-
-All targets below live in the root package of the `graphviz` module
-(reference them as `@graphviz//:<name>` from a consuming module).
-
-### Common entry points
-
-| Target                 | Kind        | Use for                                  |
-| ---------------------- | ----------- | ---------------------------------------- |
-| `@graphviz//:graphviz` | `cc_library`| The library most downstream users want — every core lib plus `plugin/core` and `plugin/dot_layout` aggregated, and the static plugin registration table (`lt_preloaded_symbols`) for `gvContextPlugins`. |
-| `@graphviz//:lib`      | `alias`     | Backwards-compatible alias for `:graphviz`. |
-| `@graphviz//:dot`      | `cc_binary` | The `dot` CLI. Run-only consumers (e.g. `genrule` data deps) should prefer the filegroup below. |
-| `@graphviz//:dot_bin`  | `filegroup` | Wraps `:dot` for use as `data = [...]` or in `$(location ...)` expansions. |
-
-### Granular libraries
-
-Useful if you only need part of the dependency graph — e.g. you want to
-parse a `.dot` file but do your own layout. They build cleanly in
-isolation and only pull in the deps they actually need.
-
-| Target                          | What it contains                                  |
-| ------------------------------- | ------------------------------------------------- |
-| `@graphviz//:cdt`               | `lib/cdt` — container data types (dict, tree).    |
-| `@graphviz//:util`              | `lib/util` — string, alloc, list utilities.       |
-| `@graphviz//:cgraph`            | `lib/cgraph` — graph data structure + dot parser. |
-| `@graphviz//:pathplan`          | `lib/pathplan` — shortest-path routing.           |
-| `@graphviz//:xdot`              | `lib/xdot` — extended-dot drawing operations.     |
-| `@graphviz//:label`             | `lib/label` — label placement.                    |
-| `@graphviz//:pack`              | `lib/pack` — graph packing / connected-component split. |
-| `@graphviz//:common`            | `lib/common` — layout-engine shared code.         |
-| `@graphviz//:gvc`               | `lib/gvc` — graphviz context, the main API.       |
-| `@graphviz//:dotgen`            | `lib/dotgen` — dot layout algorithm.              |
-| `@graphviz//:plugin_core`       | `plugin/core` — output drivers (dot, json, svg, ps, fig, map, tk, pov, pic). |
-| `@graphviz//:plugin_dot_layout` | `plugin/dot_layout` — the dot layout plugin wrapper. |
-
-### Minimal usage example
-
-```python
-# MODULE.bazel
-bazel_dep(name = "graphviz", version = "<latest>")
+```starlark
+bazel_dep(name = "graphviz", version = "14.0.0.bcr.1")
 ```
 
-```python
-# BUILD.bazel
-cc_binary(
-    name = "my_tool",
-    srcs = ["my_tool.cc"],
-    deps = ["@graphviz//:graphviz"],
-)
-```
+Targets: `@graphviz//:graphviz` (the library, with the dot and neato layout
+plugins linked in), `@graphviz//:dot`, and one binary per layout engine
+(`neato`, `fdp`, `sfdp`, `circo`, `twopi`, `osage`, `patchwork`), each a
+wrapper that passes `-K` to `dot`.
+The module registers no C++ toolchain; the consumer's applies.
 
-```cpp
-// my_tool.cc — see integration/test.cc for the full example.
-#include <cgraph/cgraph.h>
-#include <gvc/gvc.h>
-#include <gvc/gvcext.h>  // declares lt_preloaded_symbols
+## Layout of this repository
 
-int main() {
-    GVC_t *gvc = gvContextPlugins(lt_preloaded_symbols, 0);
-    // ... build a graph with agopen/agnode/agedge, then gvLayout +
-    //     gvRenderData with "dot".
-    gvFreeContext(gvc);
-    return 0;
-}
-```
+* `overlay/`: the build files, laid over the upstream archive by the
+  registry. `MODULE.bazel` here is the module's; `test_module/` is the
+  registry's test module for the entry.
+* `tests/`: the tests. The root module runs them against `@graphviz`, and
+  the generator copies them into `test_module/`.
+* `upstream.json`: which upstream archive, and which edition of the overlay.
+* `tools/make_entry.py`, `tools/presubmit.yml`: the generator and the
+  presubmit that goes into the entry.
+* `registry/`: the generated registry entry, committed.
+  `.bazelrc` puts it first among the registries, so `bazel test //...`
+  builds `@graphviz` exactly as a registry user would get it.
 
-> Use `gvContextPlugins(lt_preloaded_symbols, 0)` rather than
-> `gvContext()`. `gvContext()` passes `NULL` for builtins, so the
-> statically-registered `dot_layout` and `core` plugins never get
-> installed and layout/rendering both fail.
+## Maintenance
 
-## Verify the build
+### A new upstream release, or a change to the build files
 
-```
-bazel test //... && cd integration && bazel test //...
-```
+1. Edit `upstream.json`: the URL, `upstream_version` and `strip_prefix` for
+   a new release, or `overlay_edition` for a change to the build files.
+2. Put the same version in `overlay/MODULE.bazel`.
+3. `bazel run //tools:buildifier`, so that what goes into the entry is
+   formatted. Formatting after generating leaves `source.json` with the
+   hashes of the unformatted files.
+4. `bazel run //tools:make_entry`, which downloads the archive once to
+   compute its integrity and writes `registry/`.
+5. `bazel test //...`.
 
-## Hermeticity
+CI runs `bazel run //tools:make_entry -- --check` and fails when `registry/`
+does not match its sources.
 
-This build is entirely hermetic.
+### Publishing
 
+`Publish the registry entry` in `.github/workflows/publish.yml`, run by hand
+with the version.
+It opens a pull request against filmil/bazel-registry, and against the Bazel
+Central Registry as well when asked; that one is public and reviewed by the
+BCR maintainers.
+Because the source archive is upstream's, there is no release of this
+repository and no attestation of the archive.
 
-## Formatting
+### Formatting
 
-```
-bazel run //tools:buildifier
-```
-
-## Release Registry
-
-Refer to the [BCR][bcr] for the latest release.
-
-[bcr]: https://registry.bazel.build/
+`bazel run //tools:buildifier`.
