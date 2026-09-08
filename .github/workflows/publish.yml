@@ -49,11 +49,16 @@ jobs:
           cp -r "registry/modules/graphviz/${version}" /tmp/registry/modules/graphviz/
           bazel run //tools:make_entry -- merge-metadata \
             "${PWD}/registry/modules/graphviz/metadata.json" /tmp/registry/modules/graphviz/metadata.json
+          # The registry builds itself with Bazel, and must not load the
+          # overlay's BUILD files as packages of its own: one .bazelignore
+          # line per overlay, since Bazel expands no patterns in that file.
+          ignore="modules/graphviz/${version}/overlay"
+          grep -qxF "${ignore}" /tmp/registry/.bazelignore || echo "${ignore}" >> /tmp/registry/.bazelignore
           cd /tmp/registry
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "graphviz-${version}"
-          git add modules/graphviz
+          git add modules/graphviz .bazelignore
           git commit -m "graphviz ${version}"
           git push -u origin "graphviz-${version}"
           gh pr create --repo filmil/bazel-registry --base main --head "graphviz-${version}" \

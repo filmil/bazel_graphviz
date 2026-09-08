@@ -98,8 +98,10 @@ CI runs the same, and more:
 with the version.
 It confirms `registry/` is current, copies the entry into a clone of
 filmil/bazel-registry, merges our `metadata.json` into the registry's
-(`bazel run //tools:make_entry -- merge-metadata OURS THEIRS`), and opens a
-pull request.
+(`bazel run //tools:make_entry -- merge-metadata OURS THEIRS`), adds the
+overlay directory to the registry's `.bazelignore` (that registry builds
+itself with Bazel, and must not load the overlay's BUILD files as its own
+packages), and opens a pull request.
 When asked with `bcr: true`, it does the same against the Bazel Central
 Registry, through the fork filmil/bazel-central-registry; that pull request
 is public, reviewed by the BCR maintainers, and cites
