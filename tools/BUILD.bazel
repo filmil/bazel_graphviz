@@ -1,5 +1,4 @@
 load("@buildifier_prebuilt//:rules.bzl", "buildifier")
-load("@rules_python//python:py_binary.bzl", "py_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -9,13 +8,9 @@ buildifier(
     name = "buildifier",
 )
 
-# Writes registry/ from overlay/, tests/ and upstream.json:
-# `bazel run //tools:make_entry`. With `-- --check` it only reports whether
-# registry/ is current, which is what CI runs.
-py_binary(
+alias(
     name = "make_entry",
-    srcs = ["make_entry.py"],
-    data = ["presubmit.yml"],
+    actual = "//tools/make_entry",
 )
 
 exports_files(["presubmit.yml"])

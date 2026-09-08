@@ -1,0 +1,18 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "make_entry_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/filmil/bazel_graphviz/tools/make_entry",
+    visibility = ["//visibility:private"],
+)
+
+# Writes registry/ from overlay/, tests/ and upstream.json:
+# `bazel run //tools:make_entry`. `-- check` reports whether registry/ is
+# current, which is what CI runs; `-- merge-metadata OURS THEIRS` is what
+# the publish workflow uses.
+go_binary(
+    name = "make_entry",
+    embed = [":make_entry_lib"],
+    visibility = ["//visibility:public"],
+)

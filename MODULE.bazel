@@ -13,9 +13,12 @@ module(
 bazel_dep(name = "graphviz", version = "14.0.0.bcr.1")
 bazel_dep(name = "rules_cc", version = "0.2.22")
 bazel_dep(name = "rules_shell", version = "0.8.0")
-bazel_dep(name = "rules_python", version = "2.3.3")
+bazel_dep(name = "rules_go", version = "0.63.0")
 
 bazel_dep(name = "buildifier_prebuilt", version = "8.5.1.4", dev_dependency = True)
+
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.from_file(go_mod = "//:go.mod")
 
 # The C++ toolchain graphviz is built with here. A consumer registers its own;
 # the overlay's MODULE.bazel registers none, since register_toolchains is the

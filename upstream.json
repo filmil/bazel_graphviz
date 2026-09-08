@@ -5,8 +5,16 @@
   "url": "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/14.0.0/graphviz-14.0.0.tar.gz",
   "strip_prefix": "graphviz-14.0.0",
   "homepage": "https://graphviz.org/",
-  "repository": ["https://gitlab.com/graphviz/graphviz"],
+  "repository": [
+    "https://gitlab.com/graphviz/graphviz",
+    "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/"
+  ],
   "maintainers": [
-    {"name": "Filip Filmar", "email": "246576+filmil@users.noreply.github.com", "github": "filmil", "github_user_id": 246576}
+    {
+      "name": "Filip Filmar",
+      "email": "246576+filmil@users.noreply.github.com",
+      "github": "filmil",
+      "github_user_id": 246576
+    }
   ]
 }

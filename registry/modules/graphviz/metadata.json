@@ -9,7 +9,8 @@
         }
     ],
     "repository": [
-        "https://gitlab.com/graphviz/graphviz"
+        "https://gitlab.com/graphviz/graphviz",
+        "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/"
     ],
     "versions": [
         "14.0.0.bcr.1"

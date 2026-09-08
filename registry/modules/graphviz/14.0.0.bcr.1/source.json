@@ -1,7 +1,5 @@
 {
-    "url": "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/14.0.0/graphviz-14.0.0.tar.gz",
     "integrity": "sha256-rT9lTV1OHR5b5khvrTEG3FTo0yD7eIn3XZ05JT0uPYc=",
-    "strip_prefix": "graphviz-14.0.0",
     "overlay": {
         ".bazelignore": "sha256-tqmIyjy2h0kXazydPXeAK07a/vp8NLabWHBWDDNHTi4=",
         "BUILD.bazel": "sha256-xLP6D10FvmIqEXaX+ufQMcTtWtiBwgN5xNr0CNBer+s=",
@@ -12,5 +10,7 @@
         "test_module/MODULE.bazel": "sha256-k3qSNAr4tTTO3K3LJa5soPn14tzFOQOSLz4uaByMh7g=",
         "test_module/run_dot.sh": "sha256-s1AU6teVrLT45hnRotNRaZrpoIhBvCgpk5RdZGVjEX0=",
         "test_module/test.cc": "sha256-vIVaNEXp0a2LBA0cvdF1leVV+QuIQELHoH3nMgfLsaw="
-    }
+    },
+    "strip_prefix": "graphviz-14.0.0",
+    "url": "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/14.0.0/graphviz-14.0.0.tar.gz"
 }
