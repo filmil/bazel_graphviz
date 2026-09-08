@@ -55,8 +55,10 @@ jobs:
           ignore="modules/graphviz/${version}/overlay"
           grep -qxF "${ignore}" /tmp/registry/.bazelignore || echo "${ignore}" >> /tmp/registry/.bazelignore
           cd /tmp/registry
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The commit is the maintainer's, not a bot's: the Bazel Central
+          # Registry's CLA check wants a commit author who has signed it.
+          git config user.name "$(jq -r '.maintainers[0].name' "${GITHUB_WORKSPACE}/upstream.json")"
+          git config user.email "$(jq -r '.maintainers[0].email' "${GITHUB_WORKSPACE}/upstream.json")"
           git checkout -b "graphviz-${version}"
           git add modules/graphviz .bazelignore
           # A registry that already has this version needs nothing; the run
@@ -85,8 +87,10 @@ jobs:
           bazel run //tools:make_entry -- merge-metadata \
             "${PWD}/registry/modules/graphviz/metadata.json" /tmp/bcr/modules/graphviz/metadata.json
           cd /tmp/bcr
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The commit is the maintainer's, not a bot's: the Bazel Central
+          # Registry's CLA check wants a commit author who has signed it.
+          git config user.name "$(jq -r '.maintainers[0].name' "${GITHUB_WORKSPACE}/upstream.json")"
+          git config user.email "$(jq -r '.maintainers[0].email' "${GITHUB_WORKSPACE}/upstream.json")"
           git checkout -b "graphviz-${version}"
           git add modules/graphviz
           # A registry that already has this version needs nothing; the run
