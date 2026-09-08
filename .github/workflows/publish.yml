@@ -59,6 +59,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "graphviz-${version}"
           git add modules/graphviz .bazelignore
+          # A registry that already has this version needs nothing; the run
+          # goes on to the next registry instead of failing here.
+          if git diff --cached --quiet; then
+            echo "graphviz ${version} is already in filmil/bazel-registry; nothing to publish"
+            exit 0
+          fi
           git commit -m "graphviz ${version}"
           git push -u origin "graphviz-${version}"
           gh pr create --repo filmil/bazel-registry --base main --head "graphviz-${version}" \
@@ -83,6 +89,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "graphviz-${version}"
           git add modules/graphviz
+          # A registry that already has this version needs nothing; the run
+          # goes on to the next registry instead of failing here.
+          if git diff --cached --quiet; then
+            echo "graphviz ${version} is already in the Bazel Central Registry; nothing to publish"
+            exit 0
+          fi
           git commit -m "graphviz ${version}"
           git push -u origin "graphviz-${version}"
           gh pr create --repo bazelbuild/bazel-central-registry --base main --head "filmil:graphviz-${version}" \
