@@ -1,9 +1,16 @@
-# Add your local user settings to file `user.bazelrc`
+# The registry entry this repository generates comes first, so @graphviz
+# resolves to it; everything else comes from the Bazel Central Registry.
+common --registry=file://%workspace%/registry
+common --registry=https://bcr.bazel.build
+
+# Nothing is taken from the machine the build runs on. A missing hermetic C
+# toolchain then fails the build, instead of Bazel quietly using whatever
+# compiler it finds.
+build --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+build --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+
+# A py_binary starts from bash and the toolchain interpreter, not from the
+# machine's python3.
+common --@rules_python//python/config_settings:bootstrap_impl=script
+
 try-import %workspace%/user.bazelrc
-
-common --experimental_ui_max_stdouterr_bytes=9000000
-
-# cc_library builds intermediate `.so` files whose external symbols
-# only get resolved at final-binary link time. Tell the linker to
-# permit those unresolved references in shared libraries.
-build --linkopt=-Wl,--allow-shlib-undefined

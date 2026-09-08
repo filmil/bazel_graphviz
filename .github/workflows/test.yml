@@ -12,20 +12,18 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - name: Setup bazel
-        uses: bazel-contrib/setup-bazel@0.15.0
+      - name: Checkout
+        uses: actions/checkout@v7
+      # Checkout first: the bazelisk cache is keyed on .bazelversion.
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.19.0
         with:
           bazelisk-cache: true
           disk-cache: ${{ github.workflow }}
           repository-cache: true
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Build the main target
-        run: "bazel build --test_output=errors @graphviz//:graphviz"
-      - name: Test proper
-        run: "bazel test --test_output=errors //..."
-      - name: Test integration
-        run: "cd integration && bazel test --test_output=errors //..."
-
+      - name: "registry/ matches overlay/, tests/ and upstream.json"
+        run: bazel run //tools:make_entry -- --check
+      - name: "Build and test @graphviz through the registry entry"
+        run: bazel test //...
