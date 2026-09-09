@@ -14,8 +14,9 @@
 //
 //	bazel run //tools:make_entry                       write registry/
 //	bazel run //tools:make_entry -- check              exit 1 if registry/ is stale
-//	bazel run //tools:make_entry -- merge-metadata OURS THEIRS
-//	                                                   add our versions to a
+//	bazel run //tools:make_entry -- merge-metadata OURS THEIRS [VERSION]
+//	                                                   add VERSION, or every
+//	                                                   version we have, to a
 //	                                                   registry's metadata.json
 package main
 
@@ -80,10 +81,14 @@ func run(args []string) error {
 	case "check", "--check":
 		return generate(root, true)
 	case "merge-metadata":
-		if len(args) != 3 {
-			return fmt.Errorf("usage: merge-metadata OURS THEIRS")
+		if len(args) != 3 && len(args) != 4 {
+			return fmt.Errorf("usage: merge-metadata OURS THEIRS [VERSION]")
 		}
-		return mergeMetadata(args[1], args[2])
+		version := ""
+		if len(args) == 4 {
+			version = args[3]
+		}
+		return mergeMetadata(args[1], args[2], version)
 	}
 	return fmt.Errorf("unknown command %q", cmd)
 }
@@ -204,7 +209,16 @@ func generate(root string, check bool) error {
 
 // mergeMetadata adds our versions, and our homepage, maintainers and
 // repository, to a registry's metadata.json, creating it when absent.
-func mergeMetadata(oursPath, theirsPath string) error {
+// mergeMetadata writes our homepage, maintainers and repository into a
+// registry's metadata.json, and adds one version of ours to its version list,
+// or every version we have when version is empty.
+//
+// Which one matters: a registry's metadata.json may only name versions that
+// registry holds. bcr_validation.py reports "doesn't exist, but it's recorded
+// in metadata.json" otherwise, and the Bazel Central Registry has only the
+// versions published to it, which is not every version this repository has
+// generated.
+func mergeMetadata(oursPath, theirsPath, version string) error {
 	var ours, theirs metadata
 	if err := readJSON(oursPath, &ours); err != nil {
 		return err
@@ -214,7 +228,14 @@ func mergeMetadata(oursPath, theirsPath string) error {
 			return err
 		}
 	}
-	for _, v := range ours.Versions {
+	add := ours.Versions
+	if version != "" {
+		if !contains(ours.Versions, version) {
+			return fmt.Errorf("%s does not have version %s", oursPath, version)
+		}
+		add = []string{version}
+	}
+	for _, v := range add {
 		if !contains(theirs.Versions, v) {
 			theirs.Versions = append(theirs.Versions, v)
 		}

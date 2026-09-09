@@ -47,8 +47,11 @@ jobs:
           git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/filmil/bazel-registry.git" /tmp/registry
           mkdir -p /tmp/registry/modules/graphviz
           cp -r "registry/modules/graphviz/${version}" /tmp/registry/modules/graphviz/
+          # The version being published, and no other: a registry's
+          # metadata.json may only name versions that registry holds.
           bazel run //tools:make_entry -- merge-metadata \
-            "${PWD}/registry/modules/graphviz/metadata.json" /tmp/registry/modules/graphviz/metadata.json
+            "${PWD}/registry/modules/graphviz/metadata.json" \
+            /tmp/registry/modules/graphviz/metadata.json "${version}"
           # The registry builds itself with Bazel, and must not load the
           # overlay's BUILD files as packages of its own: one .bazelignore
           # line per overlay, since Bazel expands no patterns in that file.
@@ -85,7 +88,8 @@ jobs:
           mkdir -p /tmp/bcr/modules/graphviz
           cp -r "registry/modules/graphviz/${version}" /tmp/bcr/modules/graphviz/
           bazel run //tools:make_entry -- merge-metadata \
-            "${PWD}/registry/modules/graphviz/metadata.json" /tmp/bcr/modules/graphviz/metadata.json
+            "${PWD}/registry/modules/graphviz/metadata.json" \
+            /tmp/bcr/modules/graphviz/metadata.json "${version}"
           cd /tmp/bcr
           # The commit is the maintainer's, not a bot's: the Bazel Central
           # Registry's CLA check wants a commit author who has signed it.
