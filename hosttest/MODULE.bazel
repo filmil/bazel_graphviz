@@ -1,0 +1,14 @@
+# What a consumer of the published module gets when it registers no C++
+# toolchain of its own: the platform's compiler and linker, which is what
+# the Bazel Central Registry's presubmit uses.
+#
+# The repository's own tests build @graphviz with hermetic_cc_toolchain, and
+# its linker resolves symbol cycles that GNU ld does not. This module exists
+# so that a link the registry would reject fails here first. It is a separate
+# root module because a module cannot both register a toolchain and not.
+module(
+    name = "graphviz_host_toolchain_check",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "graphviz", version = "14.0.0.bcr.2")

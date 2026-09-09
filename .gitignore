@@ -1,3 +1,4 @@
 bazel-*
 .cache/
 user.bazelrc
+hosttest/MODULE.bazel.lock
