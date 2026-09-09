@@ -1,0 +1,10 @@
+# Built by CI as `bazel build //...`, which pulls in what it depends on. The
+# targets are the ones the registry entry's presubmit.yml names.
+filegroup(
+    name = "verify_targets",
+    srcs = [
+        "@graphviz",
+        "@graphviz//:all_layout_bins",
+        "@graphviz//:dot",
+    ],
+)

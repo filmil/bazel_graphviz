@@ -28,6 +28,31 @@ jobs:
       - name: "Build and test @graphviz through the registry entry"
         run: bazel test //...
 
+  # The registry's presubmit builds @graphviz with the platform's compiler
+  # and linker. The job above builds it with hermetic_cc_toolchain, whose
+  # linker resolves symbol cycles between graphviz's static libraries that
+  # GNU ld does not, so this is the job that fails when a link the registry
+  # would reject slips in. The registry order matters: the entry in
+  # registry/ has to win even once the same version is on the BCR.
+  host-toolchain:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}-host
+          repository-cache: true
+      - name: "Build @graphviz the way a consumer with no toolchain does"
+        working-directory: hosttest
+        run: |
+          bazel build \
+            --registry="file://${GITHUB_WORKSPACE}/registry" \
+            --registry=https://bcr.bazel.build \
+            //...
+
   # What the Bazel Central Registry's presubmit checks first, run with its
   # own tool against the entry in registry/: the archive's integrity, every
   # overlay file's hash, MODULE.bazel against the overlay, metadata.json and

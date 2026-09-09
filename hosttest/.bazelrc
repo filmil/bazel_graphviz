@@ -1,0 +1,10 @@
+# No --registry line here on purpose. The order of registries decides which
+# one supplies graphviz, and this module has to get the entry in ../registry
+# even once the same version is on the Bazel Central Registry. Pass both, in
+# this order, from the directory above:
+#
+#   cd hosttest && bazel build \
+#     --registry="file://${PWD%/hosttest}/registry" \
+#     --registry=https://bcr.bazel.build //...
+
+try-import %workspace%/user.bazelrc

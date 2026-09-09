@@ -13,8 +13,8 @@ It is built with `rules_cc` alone, no `rules_foreign_cc`, which is what
 [bazel-central-registry#4599][bcr4599] asks for.
 
 The module is named `graphviz`.
-Its version is `<upstream version>.bcr.<edition>`, so `14.0.0.bcr.1` is
-graphviz 14.0.0 with the first edition of these build files.
+Its version is `<upstream version>.bcr.<edition>`, so `14.0.0.bcr.2` is
+graphviz 14.0.0 with the second edition of these build files.
 A change to the build files alone bumps the edition; a new upstream release
 resets it to 1.
 The module declares `bazel_compatibility = [">=8.0.0"]`; this repository
@@ -27,7 +27,7 @@ itself builds with the Bazel in `.bazelversion`.
 ## Using it
 
 ```starlark
-bazel_dep(name = "graphviz", version = "14.0.0.bcr.1")
+bazel_dep(name = "graphviz", version = "14.0.0.bcr.2")
 ```
 
 Targets: `@graphviz//:graphviz` (the library, with the dot and neato layout
@@ -46,6 +46,13 @@ It registers no C++ toolchain; the consumer's applies.
   `local_path_override`.
 * `tests/`: the tests. The root module runs them against `@graphviz`, and
   the generator copies them into `test_module/`.
+* `hosttest/`: a second root module that builds `@graphviz` with the
+  platform's compiler and linker, which is what a consumer that registers no
+  toolchain gets, and what the Bazel Central Registry's presubmit uses. The
+  root module here builds with `hermetic_cc_toolchain`, whose linker resolves
+  symbol cycles between graphviz's static libraries that GNU ld does not, so
+  without this a link the registry rejects passes here. Run it with the
+  registry order the comment in `hosttest/.bazelrc` gives.
 * `upstream.json`: which upstream archive, and which edition of the overlay.
   `repository` lists the project and the prefix of its release archives:
   the BCR requires the archive URL to start with one of these.
@@ -85,6 +92,7 @@ CI runs the same, and more:
   `registry/` does not match `overlay/`, `tests/`, `tools/presubmit.yml`
   and `upstream.json`.
 * `bazel test //...`.
+* `hosttest`, the same module built with the platform's toolchain.
 * The Bazel Central Registry's own `tools/bcr_validation.py`, from a
   checkout of the registry, against the entry: the archive's integrity,
   every overlay file's hash, `MODULE.bazel` against the overlay,
