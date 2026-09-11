@@ -13,7 +13,7 @@ It is built with `rules_cc` alone, no `rules_foreign_cc`, which is what
 [bazel-central-registry#4599][bcr4599] asks for.
 
 The module is named `graphviz`.
-Its version is `<upstream version>.bcr.<edition>`, so `14.0.0.bcr.2` is
+Its version is `<upstream version>.bcr.<edition>`, so `14.0.0.bcr.3` is
 graphviz 14.0.0 with the second edition of these build files.
 A change to the build files alone bumps the edition; a new upstream release
 resets it to 1.
@@ -27,7 +27,7 @@ itself builds with the Bazel in `.bazelversion`.
 ## Using it
 
 ```starlark
-bazel_dep(name = "graphviz", version = "14.0.0.bcr.2")
+bazel_dep(name = "graphviz", version = "14.0.0.bcr.3")
 ```
 
 Targets: `@graphviz//:graphviz` (the library, with the dot and neato layout

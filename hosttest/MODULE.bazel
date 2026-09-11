@@ -11,4 +11,4 @@ module(
     version = "0.0.0",
 )
 
-bazel_dep(name = "graphviz", version = "14.0.0.bcr.2")
+bazel_dep(name = "graphviz", version = "14.0.0.bcr.3")
