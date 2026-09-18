@@ -75,6 +75,13 @@ jobs:
           disk-cache: ${{ github.workflow }}-bcr
           repository-cache: true
       - name: "Validate the entry with the registry's tool"
+        # The tool asks api.github.com for the maintainer's user id, and an
+        # anonymous request shares one small rate limit across every runner:
+        # the check failed on #32 with "unexpected 403 status code from
+        # https://api.github.com/users/filmil" while every other check was
+        # GOOD. The tool reads GITHUB_TOKEN when it is set.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o errexit -o nounset -o pipefail
           version="$(jq -r '"\(.upstream_version).bcr.\(.overlay_edition)"' upstream.json)"
